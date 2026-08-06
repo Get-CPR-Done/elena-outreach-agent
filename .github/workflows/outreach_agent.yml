@@ -6,6 +6,8 @@ on:
     # All times UTC. 9:00 AM PDT = 16:00 UTC (Mar–Nov); adjust to 17:00 in winter.
     - cron: "5 16 * * 1"                # roster      — Monday 9:05 AM PDT
     - cron: "0 16,18,20,22,0 * * 1-5"   # reply_check — every 2 hrs 9AM–5PM PDT
+    - cron: "50 23 * * 1-5"             # report      — 4:50 PM PDT: refresh command-center slice
+                                        #   for the morning briefing + the 5:20 PM combined EOD email
     # DAILY send: the 9 AM PT reply_check self-heal runs it (last_daily_run guard), so Elena
     # sends daily without a dedicated cron. A dedicated reliable cjclaude-intake trigger
     # (trigger-elena-daily, needs ELENA_DISPATCH_TOKEN) is staged and can be enabled later.
@@ -84,6 +86,7 @@ jobs:
               "0 16 * * 1-5")  echo "mode=daily"       >> $GITHUB_OUTPUT ;;
               "5 16 * * 1")    echo "mode=roster"      >> $GITHUB_OUTPUT ;;
               "0 2 * * *")     echo "mode=report"      >> $GITHUB_OUTPUT ;;
+              "50 23 * * 1-5") echo "mode=report"      >> $GITHUB_OUTPUT ;;
               *)               echo "mode=reply_check" >> $GITHUB_OUTPUT ;;
             esac
             echo "dry_run=false" >> $GITHUB_OUTPUT
