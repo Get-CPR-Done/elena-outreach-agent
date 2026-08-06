@@ -75,6 +75,14 @@ BATCH_SIZE    = 750
 MIN_DELAY_SEC = 10
 MAX_DELAY_SEC = 20
 
+# Cold-mailbox warm-up ramp. elena@ is a brand-new address on a shared domain, so the daily
+# cap steps up over the first business days instead of jumping to BATCH_SIZE (protects
+# deliverability for both Elena and Vida). Set RAMP_START_DATE (YYYY-MM-DD) to the first ramp
+# day; the cap follows RAMP_STEPS by *business days elapsed* since then, then holds at
+# BATCH_SIZE. Unset → no ramp (full BATCH_SIZE).
+RAMP_START_DATE = (os.environ.get("RAMP_START_DATE", "") or "").strip()
+RAMP_STEPS      = [50, 150, 300, 500, 750]   # faster ~1-week ramp (Chris, 2026-08-05)
+
 # Multi-touch email cadence (per SellingSara: outbound is 12-15 touches / building
 # familiarity, not one-and-done). Email is Vida's only channel, so ~4 email touches
 # over ~2 weeks. Gap in DAYS before the next touch, keyed by touches already sent:
@@ -313,6 +321,26 @@ def pacific_today():
     return (datetime.now(_PT) if _PT else datetime.now()).date()
 def today_str():
     return pacific_today().isoformat()
+
+def effective_daily_cap():
+    """Today's send cap. During the warm-up ramp (RAMP_START_DATE set), step through
+    RAMP_STEPS by business days elapsed since the start, then hold at BATCH_SIZE. No ramp
+    configured → BATCH_SIZE."""
+    if not RAMP_START_DATE:
+        return BATCH_SIZE
+    try:
+        start = date.fromisoformat(RAMP_START_DATE)
+    except ValueError:
+        return BATCH_SIZE
+    today = pacific_today()
+    # Count weekdays elapsed since start (0 on the start day itself).
+    elapsed, cur = 0, start
+    while cur < today:
+        cur += timedelta(days=1)
+        if cur.weekday() < 5:
+            elapsed += 1
+    step = RAMP_STEPS[min(elapsed, len(RAMP_STEPS) - 1)]
+    return min(step, BATCH_SIZE)
 
 def _bump(state, key, n=1):
     """Increment a per-day counter state[key][today] by n (feeds the dashboard)."""
@@ -1048,13 +1076,15 @@ def send_eod_report(sent_count, bounce_count, bounce_list, replacement_queue, sk
     )
 
     if not dry_run:
-        result = send_email(MANAE_EMAIL, subject, body, cc=CHRIS_EMAIL)
+        # Manae only. Chris no longer gets this per-agent operational summary — his EOD view is
+        # the single COMBINED Vida+Elena HTML dashboard (Chris, 2026-08-05: "one email … HTML").
+        result = send_email(MANAE_EMAIL, subject, body)
         if result.get("success"):
-            log.info("  → EOD report sent to Manae + Chris")
+            log.info("  → EOD summary sent to Manae")
         else:
-            log.error(f"  → EOD report failed: {result.get('error')}")
+            log.error(f"  → EOD summary failed: {result.get('error')}")
     else:
-        log.info(f"  [DRY RUN] Would send EOD report to Manae + Chris: {sent_count} sent, {bounce_count} bounced, {reply_count} replies")
+        log.info(f"  [DRY RUN] Would send EOD summary to Manae: {sent_count} sent, {bounce_count} bounced, {reply_count} replies")
 
 # ─── SQL detection + HubSpot write ────────────────────────────────────────────
 
@@ -1643,7 +1673,10 @@ def run_daily(dry_run=False, limit=None):
         state["last_daily_run"] = today
         save_state(state)
 
-    cap = BATCH_SIZE if limit is None else min(BATCH_SIZE, limit)
+    day_cap = effective_daily_cap()   # ramp-aware (warm-up), else BATCH_SIZE
+    cap = day_cap if limit is None else min(day_cap, limit)
+    if RAMP_START_DATE and day_cap < BATCH_SIZE:
+        log.info(f"Warm-up ramp active: today's cap {day_cap} (target {BATCH_SIZE})")
     if already_sent >= cap:
         log.info(f"Daily cap reached ({already_sent}/{cap}). Exiting.")
         return

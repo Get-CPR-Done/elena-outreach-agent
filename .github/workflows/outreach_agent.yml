@@ -1,17 +1,14 @@
 name: Outreach Agent
 
 on:
-  # ⏸ NOT YET LIVE. Schedules are intentionally disabled until go-live: Elena needs her Gmail
-  # app password (GMAIL_APP_PASSWORD secret) and the shared GCD secrets set on this repo. Until
-  # then only manual workflow_dispatch runs. TO GO LIVE: uncomment the `schedule:` block below,
-  # and enable the cjclaude-intake trigger-elena-daily cron (mirrors Vida's 9:10 AM PT send).
-  #
-  # schedule:
-  #   # All times UTC. 9:00 AM PDT = 16:00 UTC (Mar–Nov); adjust to 17:00 in winter.
-  #   - cron: "5 16 * * 1"                # roster      — Monday 9:05 AM PDT
-  #   - cron: "0 16,18,20,22,0 * * 1-5"   # reply_check — every 2 hrs 9AM–5PM PDT
-  #   # DAILY send is triggered reliably by cjclaude-intake at 9:10 AM PT (workflow_dispatch
-  #   # mode=daily), offset past the 16:00 reply_check. Backup: the reply_check self-heal.
+  # ✅ LIVE 2026-08-05 (warm-up ramp: 50→150→300→500→750 over the first business days).
+  schedule:
+    # All times UTC. 9:00 AM PDT = 16:00 UTC (Mar–Nov); adjust to 17:00 in winter.
+    - cron: "5 16 * * 1"                # roster      — Monday 9:05 AM PDT
+    - cron: "0 16,18,20,22,0 * * 1-5"   # reply_check — every 2 hrs 9AM–5PM PDT
+    # DAILY send: the 9 AM PT reply_check self-heal runs it (last_daily_run guard), so Elena
+    # sends daily without a dedicated cron. A dedicated reliable cjclaude-intake trigger
+    # (trigger-elena-daily, needs ELENA_DISPATCH_TOKEN) is staged and can be enabled later.
 
   workflow_dispatch:
     inputs:
@@ -106,6 +103,9 @@ jobs:
           # Elena (rows 62534..end, separate repo) never email the same prospect. Unset = unbounded.
           ROW_RANGE_START: ${{ vars.ROW_RANGE_START }}
           ROW_RANGE_END: ${{ vars.ROW_RANGE_END }}
+          # Cold-mailbox warm-up ramp (repo variable, YYYY-MM-DD). Cap steps 50→150→300→500→750
+          # by business day since this date, then holds at 750. Unset = full volume.
+          RAMP_START_DATE: ${{ vars.RAMP_START_DATE }}
         run: |
           MODE=${{ steps.mode.outputs.mode }}
           DRY=${{ steps.mode.outputs.dry_run }}
