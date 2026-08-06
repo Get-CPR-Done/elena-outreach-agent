@@ -1,0 +1,135 @@
+name: Outreach Agent
+
+on:
+  # ⏸ NOT YET LIVE. Schedules are intentionally disabled until go-live: Elena needs her Gmail
+  # app password (GMAIL_APP_PASSWORD secret) and the shared GCD secrets set on this repo. Until
+  # then only manual workflow_dispatch runs. TO GO LIVE: uncomment the `schedule:` block below,
+  # and enable the cjclaude-intake trigger-elena-daily cron (mirrors Vida's 9:10 AM PT send).
+  #
+  # schedule:
+  #   # All times UTC. 9:00 AM PDT = 16:00 UTC (Mar–Nov); adjust to 17:00 in winter.
+  #   - cron: "5 16 * * 1"                # roster      — Monday 9:05 AM PDT
+  #   - cron: "0 16,18,20,22,0 * * 1-5"   # reply_check — every 2 hrs 9AM–5PM PDT
+  #   # DAILY send is triggered reliably by cjclaude-intake at 9:10 AM PT (workflow_dispatch
+  #   # mode=daily), offset past the 16:00 reply_check. Backup: the reply_check self-heal.
+
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Mode to run"
+        required: true
+        default: "daily"
+        type: choice
+        options:
+          - daily
+          - roster
+          - reply_check
+          - reconcile
+          - report
+      dry_run:
+        description: "Dry run (no emails sent)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+      limit:
+        description: "Max sends this run (blank = full daily cap). Use for a small live test."
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: write                    # lets the built-in GITHUB_TOKEN commit state.json back
+
+# Serialize all runs of this agent. Prevents an overlapping report + reply_check (or two
+# delayed schedules) from both reading pre-send state and double-emailing.
+concurrency:
+  group: vida-outreach-agent
+  cancel-in-progress: false
+
+jobs:
+  run-agent:
+    runs-on: ubuntu-latest
+    # The daily send legitimately runs ~3.75h (rate-limited). Cap at 5.5h so a genuinely hung
+    # run self-clears sooner than GitHub's 6h default and can't hold the shared concurrency lock
+    # indefinitely. (Reply-check hangs are separately prevented by the IMAP socket timeout.)
+    timeout-minutes: 330
+    concurrency:
+      group: outreach-agent          # prevents two jobs running simultaneously
+      cancel-in-progress: false      # don't cancel — let the running one finish
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4.2.2
+        # No PAT needed — uses the workflow's built-in GITHUB_TOKEN (contents: write above)
+
+      - name: Set up Python
+        uses: actions/setup-python@v5.6.0
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Determine mode
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "mode=${{ github.event.inputs.mode }}" >> $GITHUB_OUTPUT
+            echo "dry_run=${{ github.event.inputs.dry_run }}" >> $GITHUB_OUTPUT
+            echo "limit=${{ github.event.inputs.limit }}" >> $GITHUB_OUTPUT
+          else
+            # Map the EXACT cron that triggered this run. Delay-proof — unlike reading
+            # the wall clock, which breaks whenever GitHub fires a schedule late.
+            case "${{ github.event.schedule }}" in
+              "0 16 * * 1-5")  echo "mode=daily"       >> $GITHUB_OUTPUT ;;
+              "5 16 * * 1")    echo "mode=roster"      >> $GITHUB_OUTPUT ;;
+              "0 2 * * *")     echo "mode=report"      >> $GITHUB_OUTPUT ;;
+              *)               echo "mode=reply_check" >> $GITHUB_OUTPUT ;;
+            esac
+            echo "dry_run=false" >> $GITHUB_OUTPUT
+            echo "limit=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run outreach agent
+        env:
+          ANTHROPIC_API_KEY:  ${{ secrets.ANTHROPIC_API_KEY }}
+          HUBSPOT_TOKEN:      ${{ secrets.HUBSPOT_TOKEN }}
+          GMAIL_ADDRESS:      ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          MANAE_CALENDAR_LINK: ${{ secrets.MANAE_CALENDAR_LINK }}
+          COMMAND_CENTER_TOKEN: ${{ secrets.COMMAND_CENTER_TOKEN }}
+          # Partition bounds (repo variables). Vida is confined to rows 2..62533 so she and
+          # Elena (rows 62534..end, separate repo) never email the same prospect. Unset = unbounded.
+          ROW_RANGE_START: ${{ vars.ROW_RANGE_START }}
+          ROW_RANGE_END: ${{ vars.ROW_RANGE_END }}
+        run: |
+          MODE=${{ steps.mode.outputs.mode }}
+          DRY=${{ steps.mode.outputs.dry_run }}
+          LIMIT=${{ steps.mode.outputs.limit }}
+          ARGS="--mode $MODE --force-weekday"
+          if [ "$DRY" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          if [ -n "$LIMIT" ]; then
+            ARGS="$ARGS --limit $LIMIT"
+          fi
+          echo "Running: python outreach_agent.py $ARGS"
+          python outreach_agent.py $ARGS
+
+      - name: Commit updated state.json
+        if: ${{ always() && steps.mode.outputs.dry_run != 'true' }}
+        run: |
+          git config user.name  "Outreach Agent"
+          git config user.email "vida@getcprdone.com"
+          git add state.json
+          if git diff --staged --quiet; then
+            echo "No state.json changes to commit."
+          else
+            git commit -m "chore: update state.json [skip ci]"
+            git pull --rebase --autostash origin main || true
+            git push || echo "push failed (non-fatal) — state re-persists next run"
+          fi
