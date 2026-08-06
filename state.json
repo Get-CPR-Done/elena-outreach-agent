@@ -5,19 +5,21 @@
   "manae_roster_pending": [],
   "last_roster_send": null,
   "daily_sent_count": {
-    "2026-08-05": 5
+    "2026-08-05": 5,
+    "2026-08-06": 19
   },
   "daily_reply_count": {},
   "do_not_contact": [],
   "bounce_replacement_queue": [],
   "sheet_cursor": 62539,
   "daily_new_count": {
-    "2026-08-05": 5
+    "2026-08-05": 5,
+    "2026-08-06": 19
   },
   "daily_sql_count": {},
   "daily_unsub_count": {},
   "daily_bounce_count": {},
   "daily_customer_count": {},
-  "last_daily_run": "2026-08-05",
+  "last_daily_run": "2026-08-06",
   "last_report_run": "2026-08-05"
 }
