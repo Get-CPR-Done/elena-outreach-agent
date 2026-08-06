@@ -1974,7 +1974,7 @@ def _sum_recent(counts_by_date, days):
     return sum(v for k, v in counts_by_date.items() if k in window)
 
 def update_agent_performance(*, sent_today, replies_7d, sql, customers, replied,
-                             contacted, today):
+                             contacted, today, table=None):
     """Write Vida's slice into command-center/data/agent-performance.json so the CEO
     morning-briefing 'Agent Performance' strip stays live without hand-editing. No-op
     (logs + returns) if COMMAND_CENTER_TOKEN is unset, so local/dry runs are unaffected.
@@ -2017,6 +2017,8 @@ def update_agent_performance(*, sent_today, replies_7d, sql, customers, replied,
             {"label": "→ Manae", "value": str(customers)},
         ],
         "note": f"Reply rate {reply_rate} · {contacted:,} reached lifetime",
+        # Detailed Today / 7-day / Lifetime table for the combined EOD email.
+        "table": table or [],
     }
     doc["generated_at"] = now
     payload = json.dumps({
@@ -2149,9 +2151,19 @@ def run_report(dry_run=False):
 
     # Always keep the CEO briefing's Agent Performance strip live (best-effort; never fatal) —
     # this is Elena's tile in the morning briefing + the combined EOD dashboard's data source.
+    perf_table = [
+        ["Emails sent",      dsc.get(today, 0), _sum_recent(dsc, 7), sent_total],
+        ["People reached",   nc.get(today, 0),  _sum_recent(nc, 7),  contacted],
+        ["Replies",          drc.get(today, 0), _sum_recent(drc, 7), replied],
+        ["SQLs",             sqc.get(today, 0), _sum_recent(sqc, 7), sql],
+        ["Cust → Manae",     cc.get(today, 0),  _sum_recent(cc, 7),  customers],
+        ["Hard bounces",     bc.get(today, 0),  _sum_recent(bc, 7),  bounced],
+        ["Unsubscribes",     uc.get(today, 0),  _sum_recent(uc, 7),  unsub],
+    ]
     update_agent_performance(
         sent_today=dsc.get(today, 0), replies_7d=_sum_recent(drc, 7), sql=sql,
         customers=customers, replied=replied, contacted=contacted, today=today,
+        table=perf_table,
     )
 
     if dry_run:
