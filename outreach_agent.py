@@ -2054,6 +2054,7 @@ def run_report(dry_run=False):
             if v.get("row", 0) >= ROW_RANGE_START
             and (ROW_RANGE_END is None or v.get("row", 0) <= ROW_RANGE_END)}
     counts = Counter(v["reply_status"] for v in snap.values() if v.get("reply_status"))
+    log.info(f"DIAG partition: START={ROW_RANGE_START} END={ROW_RANGE_END} rows_in_range={len(snap)} SQL={counts.get('SQL',0)} Customer={counts.get('Customer',0)}")
 
     contacted = sum(counts.values())               # distinct people with any status set
     sql       = counts.get("SQL", 0)
