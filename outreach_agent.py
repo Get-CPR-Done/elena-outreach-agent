@@ -2142,20 +2142,26 @@ def run_report(dry_run=False):
         "</div>"
     )
 
-    if dry_run:
-        log.info("[DRY RUN] Lead dashboard:\n" + body)
-        return
-    result = send_email(REPORT_EMAIL, subject, body, html=html)
-    if result.get("success"):
-        log.info(f"Lead dashboard emailed to {REPORT_EMAIL} ({sql} SQLs, {replied} replies)")
-    else:
-        log.error(f"Report send failed: {result.get('error')}")
-
-    # Keep the CEO briefing's Agent Performance strip live (best-effort; never fatal).
+    # Always keep the CEO briefing's Agent Performance strip live (best-effort; never fatal) —
+    # this is Elena's tile in the morning briefing + the combined EOD dashboard's data source.
     update_agent_performance(
         sent_today=dsc.get(today, 0), replies_7d=_sum_recent(drc, 7), sql=sql,
         customers=customers, replied=replied, contacted=contacted, today=today,
     )
+
+    if dry_run:
+        log.info("[DRY RUN] Lead dashboard:\n" + body)
+        return
+    # Elena does NOT email her own dashboard — Chris's EOD view is the single COMBINED
+    # Vida+Elena HTML email. Set REPORT_EMAIL_ENABLED=1 to re-enable a standalone dashboard.
+    if os.environ.get("REPORT_EMAIL_ENABLED") == "1":
+        result = send_email(REPORT_EMAIL, subject, body, html=html)
+        if result.get("success"):
+            log.info(f"Lead dashboard emailed to {REPORT_EMAIL} ({sql} SQLs, {replied} replies)")
+        else:
+            log.error(f"Report send failed: {result.get('error')}")
+    else:
+        log.info("Lead dashboard email suppressed (combined Vida+Elena email handles Chris's view); slice written.")
 
 # ─── Entry point ──────────────────────────────────────────────────────────────
 
