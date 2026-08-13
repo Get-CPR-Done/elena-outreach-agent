@@ -22,7 +22,7 @@
   },
   "do_not_contact": [],
   "bounce_replacement_queue": [],
-  "sheet_cursor": 64594,
+  "sheet_cursor": 139350,
   "daily_new_count": {
     "2026-08-05": 5,
     "2026-08-06": 50,
@@ -50,5 +50,13 @@
   },
   "daily_customer_count": {},
   "last_daily_run": "2026-08-12",
-  "last_report_run": "2026-08-12"
+  "last_report_run": "2026-08-12",
+  "skipped_ranges": [
+    {
+      "from_row": 64594,
+      "to_row": 139349,
+      "on": "2026-08-13",
+      "why": "jumped to the CA/PA healthcare block (139350-149804) at Chris's direction"
+    }
+  ]
 }
