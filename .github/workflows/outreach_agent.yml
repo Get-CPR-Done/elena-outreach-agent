@@ -109,6 +109,10 @@ jobs:
           # Cold-mailbox warm-up ramp (repo variable, YYYY-MM-DD). Cap steps 50→150→300→500→750
           # by business day since this date, then holds at 750. Unset = full volume.
           RAMP_START_DATE: ${{ vars.RAMP_START_DATE }}
+          # Cursor floor (repo variable). Re-applied on every state load so a jump to a
+          # specific row survives the state.json commit of any run already in flight.
+          # Clear it before deliberately moving the cursor backward.
+          SHEET_CURSOR_MIN: ${{ vars.SHEET_CURSOR_MIN }}
         run: |
           MODE=${{ steps.mode.outputs.mode }}
           DRY=${{ steps.mode.outputs.dry_run }}
