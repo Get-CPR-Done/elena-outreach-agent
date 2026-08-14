@@ -11,7 +11,8 @@
     "2026-08-10": 300,
     "2026-08-11": 499,
     "2026-08-12": 750,
-    "2026-08-13": 750
+    "2026-08-13": 750,
+    "2026-08-14": 749
   },
   "daily_reply_count": {
     "2026-08-06": 0,
@@ -20,7 +21,8 @@
     "2026-08-10": 1,
     "2026-08-11": 2,
     "2026-08-12": 1,
-    "2026-08-13": 7
+    "2026-08-13": 7,
+    "2026-08-14": 1
   },
   "do_not_contact": [],
   "bounce_replacement_queue": [],
@@ -38,7 +40,8 @@
     "2026-08-07": 1,
     "2026-08-10": 1,
     "2026-08-11": 1,
-    "2026-08-13": 3
+    "2026-08-13": 3,
+    "2026-08-14": 1
   },
   "daily_unsub_count": {
     "2026-08-07": 1,
@@ -55,7 +58,7 @@
     "2026-08-13": 92
   },
   "daily_customer_count": {},
-  "last_daily_run": "2026-08-13",
+  "last_daily_run": "2026-08-14",
   "last_report_run": "2026-08-13",
   "skipped_ranges": [
     {
@@ -67,22 +70,22 @@
   ],
   "open_leads": [
     {
-      "email": "manae@getcprdone.com",
-      "cid": "68549491872",
-      "name": "Manae Deguchi",
-      "company": "",
-      "why": "Vendor sent pricing, asks to confirm dates, location, participant count",
-      "handed_at": "2026-08-13T19:00:03-07:00",
-      "alerted": false,
-      "closed": false
-    },
-    {
       "email": "laura@alphaphc.com",
       "cid": "241844372127",
       "name": "Laura Villa",
       "company": "",
       "why": "Asks pricing, signup process, eligibility for son's certification",
       "handed_at": "2026-08-13T19:00:57-07:00",
+      "alerted": true,
+      "closed": false
+    },
+    {
+      "email": "matthew@epicare.org",
+      "cid": "242011401651",
+      "name": "Andrew Lopez",
+      "company": "Beachcomber Home Icf/Dd-N",
+      "why": "Asks for pricing; keeps us in mind for renewal",
+      "handed_at": "2026-08-14T09:37:14-07:00",
       "alerted": false,
       "closed": false
     }
