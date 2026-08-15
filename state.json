@@ -22,7 +22,7 @@
     "2026-08-11": 2,
     "2026-08-12": 1,
     "2026-08-13": 7,
-    "2026-08-14": 1
+    "2026-08-14": 5
   },
   "do_not_contact": [],
   "bounce_replacement_queue": [],
@@ -41,13 +41,14 @@
     "2026-08-10": 1,
     "2026-08-11": 1,
     "2026-08-13": 3,
-    "2026-08-14": 1
+    "2026-08-14": 3
   },
   "daily_unsub_count": {
     "2026-08-07": 1,
     "2026-08-11": 1,
     "2026-08-12": 5,
-    "2026-08-13": 2
+    "2026-08-13": 2,
+    "2026-08-14": 3
   },
   "daily_bounce_count": {
     "2026-08-06": 1,
@@ -55,7 +56,8 @@
     "2026-08-10": 12,
     "2026-08-11": 23,
     "2026-08-12": 38,
-    "2026-08-13": 92
+    "2026-08-13": 92,
+    "2026-08-14": 24
   },
   "daily_customer_count": {},
   "last_daily_run": "2026-08-14",
@@ -88,9 +90,20 @@
       "handed_at": "2026-08-14T09:37:14-07:00",
       "alerted": false,
       "closed": false
+    },
+    {
+      "email": "westinenterprises@gmail.com",
+      "cid": "242040974134",
+      "name": "Evelyn Andamo",
+      "company": "Carson Adult Day Health Care Center",
+      "why": "Asks for pricing per person with discount; ready to purchase.",
+      "handed_at": "2026-08-14T17:13:05-07:00",
+      "alerted": false,
+      "closed": false
     }
   ],
   "daily_potential_count": {
-    "2026-08-13": 1
+    "2026-08-13": 1,
+    "2026-08-14": 1
   }
 }
