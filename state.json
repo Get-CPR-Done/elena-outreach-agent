@@ -22,7 +22,8 @@
     "2026-08-11": 2,
     "2026-08-12": 1,
     "2026-08-13": 7,
-    "2026-08-14": 5
+    "2026-08-14": 5,
+    "2026-08-15": 1
   },
   "do_not_contact": [],
   "bounce_replacement_queue": [],
@@ -82,23 +83,13 @@
       "closed": false
     },
     {
-      "email": "matthew@epicare.org",
-      "cid": "242011401651",
-      "name": "Andrew Lopez",
-      "company": "Beachcomber Home Icf/Dd-N",
-      "why": "Asks for pricing; keeps us in mind for renewal",
-      "handed_at": "2026-08-14T09:37:14-07:00",
-      "alerted": false,
-      "closed": false
-    },
-    {
       "email": "westinenterprises@gmail.com",
       "cid": "242040974134",
       "name": "Evelyn Andamo",
       "company": "Carson Adult Day Health Care Center",
       "why": "Asks for pricing per person with discount; ready to purchase.",
       "handed_at": "2026-08-14T17:13:05-07:00",
-      "alerted": false,
+      "alerted": true,
       "closed": false
     }
   ],
