@@ -26,7 +26,7 @@
     "2026-08-14": 5,
     "2026-08-15": 1,
     "2026-08-16": 1,
-    "2026-08-17": 9
+    "2026-08-17": 10
   },
   "do_not_contact": [],
   "bounce_replacement_queue": [],
@@ -45,7 +45,8 @@
     "2026-08-10": 1,
     "2026-08-11": 1,
     "2026-08-13": 3,
-    "2026-08-14": 3
+    "2026-08-14": 3,
+    "2026-08-17": 1
   },
   "daily_unsub_count": {
     "2026-08-07": 1,
@@ -54,7 +55,7 @@
     "2026-08-13": 2,
     "2026-08-14": 5,
     "2026-08-15": 1,
-    "2026-08-17": 8
+    "2026-08-17": 10
   },
   "daily_bounce_count": {
     "2026-08-06": 1,
@@ -98,6 +99,16 @@
       "why": "Asks for pricing per person with discount; ready to purchase.",
       "handed_at": "2026-08-14T17:13:05-07:00",
       "alerted": true,
+      "closed": false
+    },
+    {
+      "email": "manae@getcprdone.com",
+      "cid": "68549491872",
+      "name": "Manae Deguchi",
+      "company": "",
+      "why": "Asks for specific scheduling details: date, time, location, participant count, course type.",
+      "handed_at": "2026-08-17T15:10:16-07:00",
+      "alerted": false,
       "closed": false
     }
   ],
