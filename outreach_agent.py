@@ -72,9 +72,10 @@ PROOF_POINT   = ("we've trained thousands of people across the country — teach
 # hard cap is ~2,000/day; to scale past this, add mailboxes/subdomains, don't just
 # raise the number. (Sustained 750/day requires the repo to be PUBLIC for free
 # unlimited Actions minutes — see README.)
-BATCH_SIZE    = 750
-MIN_DELAY_SEC = 10
-MAX_DELAY_SEC = 20
+BATCH_SIZE    = 1000
+# See Vida: at ~18.7s per send end-to-end, 1,000 would run past the job timeout.
+MIN_DELAY_SEC = 6
+MAX_DELAY_SEC = 12
 
 # Cold-mailbox warm-up ramp. elena@ is a brand-new address on a shared domain, so the daily
 # cap steps up over the first business days instead of jumping to BATCH_SIZE (protects
@@ -82,7 +83,9 @@ MAX_DELAY_SEC = 20
 # day; the cap follows RAMP_STEPS by *business days elapsed* since then, then holds at
 # BATCH_SIZE. Unset → no ramp (full BATCH_SIZE).
 RAMP_START_DATE = (os.environ.get("RAMP_START_DATE", "") or "").strip()
-RAMP_STEPS      = [50, 150, 300, 500, 750]   # faster ~1-week ramp (Chris, 2026-08-05)
+# Re-based 2026-08-17 to step 750 -> 1,000 rather than jump: elena@ is a 12-day-old mailbox
+# on a domain that also carries Manae's real sales mail, so the climb stays gradual.
+RAMP_STEPS      = [750, 900, 1000]
 
 # Multi-touch email cadence (per SellingSara: outbound is 12-15 touches / building
 # familiarity, not one-and-done). Email is Vida's only channel, so ~4 email touches
