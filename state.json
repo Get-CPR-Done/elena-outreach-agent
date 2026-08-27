@@ -20,7 +20,8 @@
     "2026-08-21": 666,
     "2026-08-24": 1000,
     "2026-08-25": 370,
-    "2026-08-26": 974
+    "2026-08-26": 974,
+    "2026-08-27": 283
   },
   "daily_reply_count": {
     "2026-08-06": 0,
@@ -42,7 +43,8 @@
     "2026-08-23": 0,
     "2026-08-24": 1,
     "2026-08-25": 0,
-    "2026-08-26": 1
+    "2026-08-26": 1,
+    "2026-08-27": 1
   },
   "do_not_contact": [],
   "bounce_replacement_queue": [],
@@ -65,7 +67,8 @@
     "2026-08-11": 1,
     "2026-08-13": 3,
     "2026-08-14": 3,
-    "2026-08-17": 2
+    "2026-08-17": 2,
+    "2026-08-27": 1
   },
   "daily_unsub_count": {
     "2026-08-07": 1,
@@ -101,10 +104,11 @@
     "2026-08-23": 9,
     "2026-08-24": 5,
     "2026-08-25": 639,
-    "2026-08-26": 29
+    "2026-08-26": 29,
+    "2026-08-27": 721
   },
   "daily_customer_count": {},
-  "last_daily_run": "2026-08-26",
+  "last_daily_run": "2026-08-27",
   "last_report_run": "2026-08-26",
   "skipped_ranges": [
     {
@@ -144,6 +148,16 @@
       "handed_at": "2026-08-17T15:10:16-07:00",
       "alerted": false,
       "closed": false
+    },
+    {
+      "email": "info@liberumhospice.com",
+      "cid": "244633011516",
+      "name": "Eric Berces",
+      "company": "Liberum Hospice Care, INC",
+      "why": "Asks pricing for CPR renewal; ready to act.",
+      "handed_at": "2026-08-27T00:56:15-07:00",
+      "alerted": false,
+      "closed": false
     }
   ],
   "daily_potential_count": {
@@ -161,6 +175,7 @@
     "joleson@walkerville.k12.mi.us": "2026-08-18",
     "vcaperryton@gmail.com": "2026-08-18",
     "jknox@acboe.org": "2026-08-24",
-    "michelle@attahh.com": "2026-08-26"
+    "michelle@attahh.com": "2026-08-26",
+    "info@liberumhospice.com": "2026-08-27"
   }
 }
