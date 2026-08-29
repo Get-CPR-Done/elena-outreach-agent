@@ -413,6 +413,7 @@ def _normalize_state(raw: dict) -> dict:
         "daily_reply_count": {},
         "do_not_contact": [],
         "bounce_replacement_queue": [],
+        "pending_row_writes": [],
         "sheet_cursor": ROW_RANGE_START,
     }
     state.update(raw)
@@ -471,6 +472,7 @@ def load_state():
         "daily_reply_count": {},
         "do_not_contact": [],
         "bounce_replacement_queue": [],
+        "pending_row_writes": [],
         "sheet_cursor": ROW_RANGE_START,
     }
 
@@ -601,6 +603,63 @@ def http_post_raw(url, headers, payload):
 
 def _sheet_service():
     return sheets_db.service()
+
+
+# Sheet write-back that can't kill a send run. Google's Sheets API drops the odd
+# call from CI (read timeout, TLS reset); before 2026-08-28 that exception escaped
+# mid-loop and aborted the whole day's send with 100+ contacts still queued. Now a
+# failed write is parked in state and replayed at the top of the next run, and the
+# row is held out of that run's candidates so it can't be emailed twice.
+#
+# Only non-PII fields are queued: state.json is committed to a PUBLIC repo, so names
+# and addresses must never land in it (see save_state). The cleaned first/last name is
+# dropped from the replay — cosmetic — and any address inside a bounce message is masked.
+SAFE_QUEUE_FIELDS = {"contacted", "date_sent", "reply_status", "touches",
+                     "last_result", "do_not_contact", "reply_date"}
+_EMAIL_RE = re.compile(r"[\w.+-]+@[\w.-]+\.\w+")
+
+
+def _redact_emails(value):
+    """Mask any address inside a queued value — bounce text often quotes the recipient."""
+    return _EMAIL_RE.sub("[address]", value) if isinstance(value, str) else value
+
+
+def _mark_row(svc, state, row, **fields):
+    """Write a row result back to the sheet. On failure, queue it and keep going.
+    Returns True if the write landed."""
+    try:
+        sheets_db.update_row(svc, SPREADSHEET_ID, row, **fields)
+        return True
+    except Exception as e:
+        safe = {k: _redact_emails(v) for k, v in fields.items() if k in SAFE_QUEUE_FIELDS}
+        pending = state.setdefault("pending_row_writes", [])
+        pending.append({"row": row, "fields": safe})
+        save_state(state)
+        log.warning(f"  ! Sheet write failed for row {row}: {e} — queued for next run "
+                    f"(row held back so it can't be re-sent)")
+        return False
+
+
+def flush_pending_row_writes(svc, state):
+    """Replay row writes that a previous run couldn't land. Returns the set of rows
+    still unwritten — those must be excluded from this run's candidates, because the
+    sheet still shows them as unsent and would otherwise queue a duplicate email."""
+    pending = state.get("pending_row_writes") or []
+    if not pending:
+        return set()
+    still, done = [], 0
+    for item in pending:
+        try:
+            sheets_db.update_row(svc, SPREADSHEET_ID, item["row"], **(item.get("fields") or {}))
+            done += 1
+        except Exception as e:
+            log.warning(f"  ! Pending write for row {item.get('row')} still failing: {e}")
+            still.append(item)
+    state["pending_row_writes"] = still
+    save_state(state)
+    log.info(f"  Replayed {done} queued sheet write(s); {len(still)} still pending")
+    return {i["row"] for i in still}
+
 
 def fetch_sheet_contacts(svc, state, needed, extra_skip=None):
     """
@@ -2518,6 +2577,7 @@ def run_daily(dry_run=False, limit=None):
     try:
         svc = _sheet_service()
         sheets_db.ensure_headers(svc, SPREADSHEET_ID)
+        blocked_rows = flush_pending_row_writes(svc, state)
 
         # 1 — Source: follow-ups first (warmer + time-sensitive), then new contacts
         #     from the cursor to fill the rest of today's cap. Each carries a `touch`.
@@ -2531,6 +2591,12 @@ def run_daily(dry_run=False, limit=None):
         for c in new_contacts:
             c["touch"] = 1
         candidates = followups + new_contacts
+        if blocked_rows:
+            held = [c for c in candidates if c["row"] in blocked_rows]
+            if held:
+                candidates = [c for c in candidates if c["row"] not in blocked_rows]
+                log.info(f"  Holding {len(held)} row(s) with an unwritten result — "
+                         f"already emailed, sheet not yet updated")
         if not candidates:
             log.info("Nothing due: no follow-ups and no new contacts at the cursor.")
             if not dry_run:
@@ -2557,8 +2623,8 @@ def run_daily(dry_run=False, limit=None):
             if hs.get("isCustomer"):
                 customers.append({"contact": c, "hubspot": hs})
                 if not dry_run:
-                    sheets_db.update_row(
-                        svc, SPREADSHEET_ID, c["row"],
+                    _mark_row(
+                        svc, state, c["row"],
                         contacted=today, date_sent=today, reply_status="Customer",
                         last_result="existing customer → Manae")
                     _bump(state, "daily_customer_count")
@@ -2616,8 +2682,8 @@ def run_daily(dry_run=False, limit=None):
             if result.get("success"):
                 today_sent    += 1
                 sent_this_run += 1
-                sheets_db.update_row(
-                    svc, SPREADSHEET_ID, row,
+                _mark_row(
+                    svc, state, row,
                     contacted=today, date_sent=today, reply_status="Contacted",
                     touches=touch, last_result=f"sent (touch {touch})", **name_updates)
                 if touch == 1:
@@ -2628,8 +2694,8 @@ def run_daily(dry_run=False, limit=None):
                 log.warning(f"  ✗ Hard bounce (row {row}): {err}")
                 do_not_contact.add(email.lower())
                 today_bounces.append(email)
-                sheets_db.update_row(
-                    svc, SPREADSHEET_ID, row,
+                _mark_row(
+                    svc, state, row,
                     contacted=today, date_sent=today, reply_status="Bounced",
                     do_not_contact="yes", touches=touch,
                     last_result=f"hard bounce: {err}"[:250], **name_updates)

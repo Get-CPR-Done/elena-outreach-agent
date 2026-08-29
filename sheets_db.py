@@ -50,22 +50,54 @@ PLACEHOLDER_ADDRESSES = {
 }
 
 
+# Socket timeout for every Sheets call. Without one, httplib2 inherits the process
+# default (none) and a stalled read can hang for minutes — on 2026-08-28 a hung
+# batchUpdate burned 5.5 min and then killed a send run 894 emails in.
+HTTP_TIMEOUT = int(os.environ.get("SHEETS_HTTP_TIMEOUT", "90") or 90)
+
+_LAST_SERVICE = None   # most recently built client, so _retry can drop its sockets
+
+
+def _reset_connections(svc=None):
+    """Drop httplib2's cached sockets before a retry. A read timeout leaves the
+    keep-alive connection half-dead, so retrying on it just times out again —
+    every attempt fails the same way and the 'retry' does nothing."""
+    svc = svc or _LAST_SERVICE
+    try:
+        http = getattr(svc, "_http", None)
+        inner = getattr(http, "http", http)          # AuthorizedHttp wraps httplib2.Http
+        conns = getattr(inner, "connections", None)
+        if not conns:
+            return
+        for conn in list(conns.values()):
+            try:
+                conn.close()
+            except Exception:
+                pass
+        conns.clear()
+    except Exception:
+        pass
+
+
 def _retry(fn, tries=5):
     """Run a Sheets API call, retrying transient TLS/network drops (SSLEOFError,
-    broken pipe, token-refresh failures) that Google's API throws intermittently
-    from CI runners. Raises the last error only after all retries are exhausted."""
+    broken pipe, read timeouts, token-refresh failures) that Google's API throws
+    intermittently from CI runners. Sockets are reset between attempts. Raises the
+    last error only after all retries are exhausted."""
     last = None
     for attempt in range(tries):
         try:
             return fn()
         except Exception as e:
             last = e
-            time.sleep(2 * (attempt + 1))
+            _reset_connections()
+            time.sleep(min(30, 2 ** attempt))
     raise last
 
 
 def service():
     """Build an authenticated Sheets API client from the service-account JSON."""
+    global _LAST_SERVICE
     from google.oauth2 import service_account
     from googleapiclient.discovery import build
 
@@ -76,7 +108,17 @@ def service():
     creds = service_account.Credentials.from_service_account_info(
         info, scopes=["https://www.googleapis.com/auth/spreadsheets"]
     )
-    return build("sheets", "v4", credentials=creds, cache_discovery=False)
+    try:
+        import httplib2
+        import google_auth_httplib2
+        authed = google_auth_httplib2.AuthorizedHttp(
+            creds, http=httplib2.Http(timeout=HTTP_TIMEOUT))
+        svc = build("sheets", "v4", http=authed, cache_discovery=False)
+    except ImportError:
+        # Fall back to the default transport rather than losing the agent entirely.
+        svc = build("sheets", "v4", credentials=creds, cache_discovery=False)
+    _LAST_SERVICE = svc
+    return svc
 
 
 def _get(svc, spreadsheet_id, a1):
