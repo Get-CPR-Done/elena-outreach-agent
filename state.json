@@ -125,7 +125,7 @@
   },
   "daily_customer_count": {},
   "last_daily_run": "2026-09-01",
-  "last_report_run": "2026-08-31",
+  "last_report_run": "2026-09-01",
   "skipped_ranges": [
     {
       "from_row": 64594,
