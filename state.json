@@ -62,7 +62,7 @@
     "2026-09-04": 1,
     "2026-09-05": 0,
     "2026-09-06": 0,
-    "2026-09-07": 0
+    "2026-09-07": 1
   },
   "do_not_contact": [],
   "bounce_replacement_queue": [],
@@ -191,7 +191,8 @@
     "2026-08-26": 1,
     "2026-08-27": 1,
     "2026-08-28": 2,
-    "2026-09-04": 1
+    "2026-09-04": 1,
+    "2026-09-07": 1
   },
   "forwarded_recent": {
     "manae@getcprdone.com": "2026-08-17",
@@ -206,6 +207,7 @@
     "travis.stalford@cvilleschools.com": "2026-08-28",
     "isquibb@fusdk12.net": "2026-08-28",
     "kevin.learned@pccsk12.com": "2026-08-28",
-    "bmouanoutoua@gfho.org": "2026-09-04"
+    "bmouanoutoua@gfho.org": "2026-09-04",
+    "admin@trabucohillspostacute.com": "2026-09-07"
   }
 }
