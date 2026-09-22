@@ -88,7 +88,7 @@
     "2026-09-19": 0,
     "2026-09-20": 0,
     "2026-09-21": 0,
-    "2026-09-22": 0
+    "2026-09-22": 1
   },
   "do_not_contact": [],
   "bounce_replacement_queue": [],
@@ -113,7 +113,8 @@
     "2026-08-13": 3,
     "2026-08-14": 3,
     "2026-08-17": 2,
-    "2026-08-27": 1
+    "2026-08-27": 1,
+    "2026-09-22": 1
   },
   "daily_unsub_count": {
     "2026-08-07": 1,
@@ -131,7 +132,8 @@
     "2026-08-26": 1,
     "2026-08-27": 1,
     "2026-08-28": 2,
-    "2026-09-16": 1
+    "2026-09-16": 1,
+    "2026-09-22": 1
   },
   "daily_bounce_count": {
     "2026-08-06": 1,
@@ -215,6 +217,16 @@
       "handed_at": "2026-08-17T15:10:16-07:00",
       "alerted": false,
       "closed": false
+    },
+    {
+      "email": "manju@solanocbas.com",
+      "cid": "250179017340",
+      "name": "Rodolfo Daquioag",
+      "company": "Solano Adult Day Health Care Center",
+      "why": "Asks pricing model, location, weekend availability\u2014ready to book.",
+      "handed_at": "2026-09-22T15:27:03-07:00",
+      "alerted": false,
+      "closed": false
     }
   ],
   "daily_potential_count": {
@@ -246,6 +258,7 @@
     "kevin.learned@pccsk12.com": "2026-08-28",
     "bmouanoutoua@gfho.org": "2026-09-04",
     "admin@trabucohillspostacute.com": "2026-09-07",
-    "lamesarehab121@gmail.com": "2026-09-09"
+    "lamesarehab121@gmail.com": "2026-09-09",
+    "manju@solanocbas.com": "2026-09-22"
   }
 }
