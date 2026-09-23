@@ -39,7 +39,8 @@
     "2026-09-17": 200,
     "2026-09-18": 200,
     "2026-09-21": 200,
-    "2026-09-22": 200
+    "2026-09-22": 200,
+    "2026-09-23": 200
   },
   "daily_reply_count": {
     "2026-08-06": 0,
@@ -88,7 +89,8 @@
     "2026-09-19": 0,
     "2026-09-20": 0,
     "2026-09-21": 0,
-    "2026-09-22": 1
+    "2026-09-22": 1,
+    "2026-09-23": 0
   },
   "do_not_contact": [],
   "bounce_replacement_queue": [],
@@ -177,7 +179,7 @@
     "2026-09-21": 1
   },
   "daily_customer_count": {},
-  "last_daily_run": "2026-09-22",
+  "last_daily_run": "2026-09-23",
   "last_report_run": "2026-09-22",
   "skipped_ranges": [
     {
@@ -215,16 +217,6 @@
       "company": "",
       "why": "Asks for specific scheduling details: date, time, location, participant count, course type.",
       "handed_at": "2026-08-17T15:10:16-07:00",
-      "alerted": false,
-      "closed": false
-    },
-    {
-      "email": "manju@solanocbas.com",
-      "cid": "250179017340",
-      "name": "Rodolfo Daquioag",
-      "company": "Solano Adult Day Health Care Center",
-      "why": "Asks pricing model, location, weekend availability\u2014ready to book.",
-      "handed_at": "2026-09-22T15:27:03-07:00",
       "alerted": false,
       "closed": false
     }
