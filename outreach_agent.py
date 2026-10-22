@@ -2,7 +2,7 @@
 Get CPR Done — Batch Outreach Agent
 ====================================
 Runs M–F only. Sources contacts from a Google Sheet (the living database),
-cross-checks HubSpot, routes existing customers to Manae's weekly roster,
+cross-checks HubSpot, routes existing customers to Kayla's weekly roster,
 and sends personalized outreach emails from Elena Reyes to prospects — writing the
 result (sent / bounced / replied / SQL) back to each row as it goes.
 
@@ -11,7 +11,7 @@ are confined to disjoint row ranges (ROW_RANGE_START/END) so they never email th
 same prospect: Vida = rows 2..62533, Elena = rows 62534..end.
 
 On any failure      → emails Chris.
-On any reply        → forwards to Elena's mailbox + notifies Manae.
+On any reply        → forwards to Elena's mailbox + notifies Kayla.
 On hard bounce      → logs to do_not_contact, queues org for replacement search.
 End of day          → summary report to Chris.
 
@@ -50,7 +50,10 @@ from email_format import clean_quote, link_html, paras_html, quote_block_html, w
 # ─── Config ───────────────────────────────────────────────────────────────────
 
 SENDER_EMAIL  = "elena@getcprdone.com"
-MANAE_EMAIL   = "Manae@GetCPRDone.com"
+# Who works GCD leads. Kayla took over from Manae on 2026-10-22 (going forward only —
+# leads already handed to Manae stay where they are).
+REP_NAME      = "Kayla"
+REP_EMAIL     = "KaylaMcClure@GetCPRDone.com"
 CHRIS_EMAIL   = "chris@getcprdone.com"
 REPORT_EMAIL  = "chris@joffeemergencyservices.com"   # lead dashboard → Chris's main inbox
 SENDING_NAME  = "Elena Reyes"
@@ -138,8 +141,8 @@ GEN_MODEL = "claude-haiku-4-5"
 # HubSpot meetings link — safe to hardcode; env var can override).
 # NOTE: `or` (not a get-default) so an empty env var — which the workflow sets when
 # the optional secret is absent — still falls back to the real hardcoded link.
-MANAE_CALENDAR_LINK = os.environ.get("MANAE_CALENDAR_LINK") or \
-    "https://meetings.hubspot.com/manae-deguchi?uuid=76b99631-517e-4aa3-baa3-537375a5db77"
+REP_CALENDAR_LINK = os.environ.get("REP_CALENDAR_LINK") or \
+    "https://meetings.hubspot.com/kaylamcclure1"
 
 # ─── Segment → course line ───────────────────────────────────────────────────
 # The list is no longer one kind of buyer. A skilled nursing facility renews AHA BLS
@@ -1049,16 +1052,16 @@ def build_outreach_bodies(body):
     # ALWAYS return HTML now. It used to be None whenever the scheduler phrase was absent,
     # which meant those emails went out plain-text only: hard-wrapped lines and any URL
     # sitting there naked, both of which read as machine output (Chris, 2026-08-17).
-    has_link = bool(MANAE_CALENDAR_LINK and _MEETING_LINK_RE.search(body))
+    has_link = bool(REP_CALENDAR_LINK and _MEETING_LINK_RE.search(body))
 
     # Plaintext fallback: keep the words, make the URL reachable once, on its own line so it
     # can't break mid-sentence when a client wraps it.
     plain = (_MEETING_LINK_RE.sub(lambda m: f"{m.group(0)}", body, count=1) if has_link else body)
     if has_link:
-        plain = plain.rstrip() + f"\n\n{MANAE_CALENDAR_LINK}"
+        plain = plain.rstrip() + f"\n\n{REP_CALENDAR_LINK}"
 
     # HTML: real paragraphs, and the words "meeting link" carry the href.
-    marked = (_MEETING_LINK_RE.sub(lambda m: f"[{m.group(0)}]({MANAE_CALENDAR_LINK})", body, count=1)
+    marked = (_MEETING_LINK_RE.sub(lambda m: f"[{m.group(0)}]({REP_CALENDAR_LINK})", body, count=1)
               if has_link else body)
     html = wrapper_html(paras_html(marked),
                         signature=f"{SENDING_NAME} | {COMPANY_NAME}")
@@ -1079,7 +1082,7 @@ def generate_emails_batch(contacts):
         "(e.g. 'grab whatever time works on my meeting link' or 'my meeting link has a "
         "few open times'). Do NOT paste a URL — write the words \"meeting link\" exactly "
         "once and nothing more; the words will be turned into the clickable link for you."
-        if MANAE_CALENDAR_LINK else
+        if REP_CALENDAR_LINK else
         "- Close with a soft ask for a quick 15-minute call (e.g. 'worth a quick chat?' — "
         "'reply and I'll send a couple of times')"
     )
@@ -1311,7 +1314,7 @@ def notify_chris(error_msg, context=""):
 # ─── End-of-day report ────────────────────────────────────────────────────────
 
 def send_eod_report(sent_count, bounce_count, bounce_list, replacement_queue, skipped_role, dry_run=False, warmth_breakdown=None, state=None):
-    """Email Manae + Chris a summary of today's outreach activity."""
+    """Email the GCD rep + Chris a summary of today's outreach activity."""
     today = today_str()
     subject = f"[Outreach Report] {today} — {sent_count} sent"
 
@@ -1341,7 +1344,7 @@ def send_eod_report(sent_count, bounce_count, bounce_list, replacement_queue, sk
     if bounce_count > 0 and sent_count > 0 and bounce_count / sent_count > 0.05:
         observations.append(f"Bounce rate is elevated ({bounce_rate}) — consider list hygiene on the source segments.")
     if reply_count > 0:
-        observations.append(f"{reply_count} repl{'y' if reply_count == 1 else 'ies'} received — forwarded to Manae for follow-up.")
+        observations.append(f"{reply_count} repl{'y' if reply_count == 1 else 'ies'} received — forwarded to {REP_NAME} for follow-up.")
     if warmth_breakdown:
         cold = warmth_breakdown.get('cold', 0)
         total_warm = warmth_breakdown.get('hot', 0) + warmth_breakdown.get('warm', 0)
@@ -1430,7 +1433,7 @@ def _html_to_text(html):
 def _reply_body(msg):
     """Extract a reply's readable text. Prefer text/plain, but fall back to a tag-stripped
     text/html part so an HTML-only reply is NEVER seen as an empty message (which used to
-    blank Manae's forward AND make the interest classifier default to 'interested')."""
+    blank the rep's forward AND make the interest classifier default to 'interested')."""
     plain, html = "", ""
     if msg.is_multipart():
         for part in msg.walk():
@@ -1465,7 +1468,7 @@ def classify_interest(subject, body_text):
     Returns (is_auto, opt_out, interested, tier, reason), where tier is "sql" for a real
     buying signal, "potential" for a warm reply with no ask, or "" when not interested.
       is_auto    = automated / no-action message (auto-ack, OOO, email-change notice,
-                   ticket confirmation) that Manae does NOT need.
+                   ticket confirmation) that Kayla does NOT need.
       opt_out    = the person wants off the list (stop / remove me / unsubscribe).
       interested = a genuine human showing ANY curiosity or engagement = a sales-qualified
                    lead (broad, per our SDR playbook — not just explicit booking).
@@ -1527,7 +1530,7 @@ def classify_interest(subject, body_text):
         return (bool(r.get("auto")), bool(r.get("opt_out")), interested, tier,
                 r.get("reason", ""))
     except Exception as e:
-        log.warning(f"  Reply triage failed: {e} — forwarding to Manae to be safe")
+        log.warning(f"  Reply triage failed: {e} — forwarding to {REP_NAME} to be safe")
         return False, False, False, "", "classifier error"
 
 _HS_PORTAL = None
@@ -1542,7 +1545,7 @@ _HS_TRAFFIC_PROP = None  # cache: (property_internal_name, option_value) or (Non
 # Before this, the SQL write set lifecycle + lead status and nothing else, so a handoff
 # lived only as one email in one inbox: nothing appeared in a queue, nothing measured a
 # response time, and a missed lead died silently (Chris, 2026-08-13). GCD = Manae.
-LEAD_OWNER_EMAIL = os.environ.get("LEAD_OWNER_EMAIL", "manae@getcprdone.com")
+LEAD_OWNER_EMAIL = os.environ.get("LEAD_OWNER_EMAIL", "kaylamcclure@getcprdone.com")
 # When the owner's task comes due, and — separately — when a lead with no logged
 # follow-up escalates to Chris. The task is deliberately short-fused: it should be
 # sitting at the top of the queue within the half hour, long before the 12h escalation
@@ -2032,7 +2035,7 @@ def hubspot_upsert_sql(email, first="", last="", company="", phone="",
         return ""
 
 def draft_air_reply(subject, body_text):
-    """Draft a suggested A-I-R reply (Acknowledge / Insert Value / Re-engage) for Manae
+    """Draft a suggested A-I-R reply (Acknowledge / Insert Value / Re-engage) for the rep
     to review and send. Returns '' on failure (the forward still goes out)."""
     try:
         payload = {
@@ -2048,7 +2051,7 @@ def draft_air_reply(subject, body_text):
                 "(R) Re-engage with one concrete next step — offer a quick 15-minute call and "
                 "the scheduling link. Consultative, warm, no hard close, no exclamation points, "
                 "3-5 sentences. "
-                + (f"Scheduling link: {MANAE_CALENDAR_LINK}. " if MANAE_CALENDAR_LINK else "")
+                + (f"Scheduling link: {REP_CALENDAR_LINK}. " if REP_CALENDAR_LINK else "")
                 + "Return ONLY the suggested email body."
             ),
             "messages": [{"role": "user", "content": f"Prospect reply — Subject: {subject}\n\n{body_text[:1500]}"}],
@@ -2316,7 +2319,7 @@ def check_replies(state, dry_run=False):
                         stage = "salesqualifiedlead"
                         label = "SQL" if is_sql else "Potential SQL"
                         log.info(f"  {label} from {redact_email(sender_email)} ({reason}) "
-                                 f"→ HubSpot + Manae")
+                                 f"→ HubSpot + {REP_NAME}")
                         if not dry_run:
                             # Write the lead into GCD HubSpot with everything we know
                             # (name, company, phone if in signature), staged per tier.
@@ -2352,7 +2355,7 @@ def check_replies(state, dry_run=False):
                         else:
                             potential_count += 1
                     else:
-                        log.info(f"  Genuine reply from {redact_email(sender_email)} (not SQL) → Manae")
+                        log.info(f"  Genuine reply from {redact_email(sender_email)} (not SQL) → {REP_NAME}")
                         mark_row(sender_email, reply_status="Replied",
                                  last_result="replied (not SQL)")
 
@@ -2414,7 +2417,7 @@ def check_replies(state, dry_run=False):
                             f"marketing-qualified lead.\n\n"
                         )
                         fwd_body = (
-                            f"Hi Manae,\n\n"
+                            f"Hi {REP_NAME},\n\n"
                             f"{opener}"
                             f"{contact_block}{hs_line}{quoted}"
                             f"Thanks!\n{SENDER_FIRST}"
@@ -2422,7 +2425,7 @@ def check_replies(state, dry_run=False):
                     else:
                         fwd_subject = f"{full_name or sender} replied — worth a look"
                         fwd_body = (
-                            f"Hi Manae,\n\n"
+                            f"Hi {REP_NAME},\n\n"
                             f"{who} just replied to my outreach — no clear booking intent yet, "
                             f"but wanted to flag it for you.\n\n{contact_block}{quoted}"
                             f"Thanks!\n{SENDER_FIRST}"
@@ -2437,7 +2440,7 @@ def check_replies(state, dry_run=False):
                     if hs_link:
                         _detail.append(link_html(hs_link, "Open the HubSpot record"))
                     fwd_html = wrapper_html(
-                        paras_html(f"Hi Manae,\n\n{opener.strip()}")
+                        paras_html(f"Hi {REP_NAME},\n\n{opener.strip()}")
                         + (f'<p style="margin:0 0 12px">{" &nbsp;·&nbsp; ".join(_detail)}</p>'
                            if _detail else "")
                         + '<p style="margin:0 0 6px;color:#666;font-size:13px">The exchange:</p>'
@@ -2450,7 +2453,7 @@ def check_replies(state, dry_run=False):
                     _fwd_log = state.setdefault("forwarded_recent", {})
                     _already = _fwd_log.get((sender_email or "").lower()) == today_str()
                     if _already:
-                        log.info(f"  Already handed {redact_email(sender_email)} to Manae "
+                        log.info(f"  Already handed {redact_email(sender_email)} to {REP_NAME} "
                                  f"today — updating HubSpot only, no second email")
                     if not dry_run:
                         if not _already:
@@ -2459,7 +2462,7 @@ def check_replies(state, dry_run=False):
                                 # it; Reply-To is the prospect so Reply reaches THEM, not us.
                                 _thread_subj = (subject if subject.lower().startswith("re:")
                                                 else f"Re: {subject}") if subject else fwd_subject
-                                send_email(MANAE_EMAIL, _thread_subj, fwd_body, html=fwd_html,
+                                send_email(REP_EMAIL, _thread_subj, fwd_body, html=fwd_html,
                                            reply_to=sender_email,
                                            in_reply_to=reply_msg_id or None,
                                            references=(reply_refs + " " + reply_msg_id).strip()
@@ -2501,14 +2504,14 @@ def check_replies(state, dry_run=False):
 def send_manae_roster(state, dry_run=False):
     roster = state.get("manae_roster_pending", [])
     if not roster:
-        log.info("Manae roster: nothing accumulated. Skipping.")
+        log.info("Kayla roster: nothing accumulated. Skipping.")
         return
 
     if state.get("last_roster_send") == today_str():
-        log.info("Manae roster already sent today. Skipping.")
+        log.info("Kayla roster already sent today. Skipping.")
         return
 
-    log.info(f"Sending Manae roster ({len(roster)} customers)...")
+    log.info(f"Sending {REP_NAME} roster ({len(roster)} customers)...")
     rows = []
     for i, entry in enumerate(roster, 1):
         c  = entry.get("contact", {})
@@ -2527,7 +2530,7 @@ def send_manae_roster(state, dry_run=False):
     week_end = (pacific_today() - timedelta(days=1)).strftime("%b %d")
     subject = f"[Weekly Roster] {len(roster)} existing customers to follow up — week ending {week_end}"
     body = (
-        f"Hi Manae,\n\n"
+        f"Hi {REP_NAME},\n\n"
         f"Here are {len(roster)} existing Get CPR Done customers surfaced from this week's "
         f"outreach list. They were filtered out of the cold batch because they already have a "
         f"relationship with us — these are yours to follow up directly.\n\n"
@@ -2536,18 +2539,18 @@ def send_manae_roster(state, dry_run=False):
     )
 
     if not dry_run:
-        result = send_email(MANAE_EMAIL, subject, body)
+        result = send_email(REP_EMAIL, subject, body)
         if result.get("success"):
             state["last_roster_send"] = today_str()
             state["manae_roster_pending"] = []
             save_state(state)
-            log.info(f"  → Roster sent to Manae ({len(roster)} customers)")
+            log.info(f"  → Roster sent to {REP_NAME} ({len(roster)} customers)")
         else:
             err = result.get("error","unknown")
             log.error(f"  → Roster send failed: {err}")
-            notify_chris(f"Manae roster send failed: {err}")
+            notify_chris(f"{REP_NAME} roster send failed: {err}")
     else:
-        log.info(f"  [DRY RUN] Would send {len(roster)}-contact roster to Manae")
+        log.info(f"  [DRY RUN] Would send {len(roster)}-contact roster to {REP_NAME}")
         state["last_roster_send"] = today_str()
         state["manae_roster_pending"] = []
         save_state(state)
@@ -2634,14 +2637,14 @@ def run_daily(dry_run=False, limit=None):
                     _mark_row(
                         svc, state, c["row"],
                         contacted=today, date_sent=today, reply_status="Customer",
-                        last_result="existing customer → Manae")
+                        last_result="existing customer → Kayla")
                     _bump(state, "daily_customer_count")
             else:
                 prospects.append(c)
         if customers and not dry_run:
             state["manae_roster_pending"] = state.get("manae_roster_pending", []) + customers
             save_state(state)
-        log.info(f"Routing: {len(prospects)} prospects, {len(customers)} customers → Manae, "
+        log.info(f"Routing: {len(prospects)} prospects, {len(customers)} customers → {REP_NAME}, "
                  f"{len(skipped_new_rows)} unresolved (HubSpot) → retry next run")
 
         # 3 — Generate emails in batches (each carries its touch number 1-4)
@@ -2765,7 +2768,7 @@ def run_reconcile(dry_run=False):
     """
     ONE-TIME backfill: read vida@'s Sent + Inbox and stamp the sheet so we never
     re-contact anyone we've already reached. Sheet-only — does NOT create HubSpot
-    records or forward anything to Manae (these are historical). Genuine replies
+    records or forward anything to Kayla (these are historical). Genuine replies
     are marked 'Replied' (no per-message SQL triage on the backlog).
     """
     import imaplib
@@ -2912,7 +2915,7 @@ def update_agent_performance(*, sent_today, replies_7d, sql, customers, replied,
             {"label": "Sent today", "value": f"{sent_today:,}"},
             {"label": "Replies 7d", "value": f"{replies_7d:,}"},
             {"label": "SQLs (life)", "value": str(sql), "tone": "good"},
-            {"label": "→ Manae", "value": str(customers)},
+            {"label": "→ Kayla", "value": str(customers)},
         ],
         "note": f"Reply rate {reply_rate} · {contacted:,} reached lifetime",
         # Detailed Today / 7-day / Lifetime table for the combined EOD email.
@@ -3060,7 +3063,7 @@ def run_report(dry_run=False):
         + r("Replies",                   drc.get(today, 0), _sum_recent(drc, 7), replied)
         + r("Sales-Qualified Leads",     sql_today, sql_7d, sql)
         + r("Potential SQLs (warm)",      pot_today, pot_7d, potential)
-        + r("Existing cust -> Manae",    cc.get(today, 0),  _sum_recent(cc, 7),  customers)
+        + r("Existing cust -> Kayla",    cc.get(today, 0),  _sum_recent(cc, 7),  customers)
         + r("Hard bounces",              bc.get(today, 0),  _sum_recent(bc, 7),  bounced)
         + r("Unsubscribes",              uc.get(today, 0),  _sum_recent(uc, 7),  unsub)
         + (f"\n  AWAITING FOLLOW-UP ({len(open_lines)}) — handed over, nothing logged yet:\n"
@@ -3068,7 +3071,7 @@ def run_report(dry_run=False):
         + f"\n  Currently awaiting reply:  {awaiting:,}\n"
         + f"  Lifetime reply rate: {pct(replied, contacted)}   "
           f"SQL rate: {pct(sql, contacted)}\n\n"
-        + f"SALES-QUALIFIED LEADS ({len(sql_list)}) — confirm Manae has reached out:\n"
+        + f"SALES-QUALIFIED LEADS ({len(sql_list)}) — confirm {REP_NAME} has reached out:\n"
         + (("\n".join(f"  - {e}" for e in sql_list)) if sql_list else "  (none yet)")
         + "\n\n"
         f"Note: SQL counts come from the sheet's reply_date column, so TODAY / 7-DAY /\n"
@@ -3102,7 +3105,7 @@ def run_report(dry_run=False):
         + hrow("Replies", drc.get(today, 0), _sum_recent(drc, 7), replied)
         + hrow("Sales-Qualified Leads", sql_today, sql_7d, sql, hi=True)
         + hrow("Potential SQLs (warm)", pot_today, pot_7d, potential)
-        + hrow("Existing customers &rarr; Manae", cc.get(today, 0), _sum_recent(cc, 7), customers)
+        + hrow("Existing customers &rarr; Kayla", cc.get(today, 0), _sum_recent(cc, 7), customers)
         + hrow("Hard bounces", bc.get(today, 0), _sum_recent(bc, 7), bounced)
         + hrow("Unsubscribes", uc.get(today, 0), _sum_recent(uc, 7), unsub)
         + "</tbody></table>"
@@ -3114,7 +3117,7 @@ def run_report(dry_run=False):
         + f"<b>Lifetime reply rate:</b> {pct(replied, contacted)} &nbsp;&nbsp; "
         + f"<b>SQL rate:</b> {pct(sql, contacted)}</p>"
         f"<p style='margin:14px 0 4px'><b>Sales-Qualified Leads ({len(sql_list)})</b> "
-        f"&mdash; confirm Manae has reached out:</p>"
+        f"&mdash; confirm {REP_NAME} has reached out:</p>"
         + ("<ul style='margin:4px 0 0;padding-left:22px'>"
            + "".join(f"<li>{e}</li>" for e in sql_list) + "</ul>"
            if sql_list else "<p style='color:#888'>(none yet)</p>")
@@ -3138,7 +3141,7 @@ def run_report(dry_run=False):
         _pt("Replies",        drc.get(today, 0), _sum_recent(drc, 7), replied),
         _pt("SQLs",           sql_today, sql_7d, sql),
         _pt("Potential SQLs", pot_today, pot_7d, potential),
-        _pt("Cust → Manae",   cc.get(today, 0),  _sum_recent(cc, 7),  customers),
+        _pt("Cust → Kayla",   cc.get(today, 0),  _sum_recent(cc, 7),  customers),
         _pt("Hard bounces",   bc.get(today, 0),  _sum_recent(bc, 7),  bounced),
         _pt("Unsubscribes",   uc.get(today, 0),  _sum_recent(uc, 7),  unsub),
     ]
