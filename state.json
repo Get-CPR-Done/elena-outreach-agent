@@ -140,7 +140,7 @@
     "2026-10-19": 0,
     "2026-10-20": 1,
     "2026-10-21": 1,
-    "2026-10-22": 0
+    "2026-10-22": 1
   },
   "do_not_contact": [],
   "bounce_replacement_queue": [],
@@ -311,7 +311,8 @@
     "2026-09-07": 1,
     "2026-09-09": 1,
     "2026-10-07": 2,
-    "2026-10-20": 1
+    "2026-10-20": 1,
+    "2026-10-22": 1
   },
   "forwarded_recent": {
     "manae@getcprdone.com": "2026-08-17",
@@ -333,6 +334,7 @@
     "info@dakmenhomehealth.com": "2026-10-07",
     "jimmy@precisionhc.org": "2026-10-07",
     "caminonuevoclinic@gmail.com": "2026-10-20",
-    "normabuenrostro51@gmail.com": "2026-10-21"
+    "normabuenrostro51@gmail.com": "2026-10-21",
+    "gehomehealthcare@gmail.com": "2026-10-22"
   }
 }
