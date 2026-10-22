@@ -138,7 +138,7 @@
     "2026-10-18": 0,
     "2026-10-19": 0,
     "2026-10-20": 1,
-    "2026-10-21": 0
+    "2026-10-21": 1
   },
   "do_not_contact": [],
   "bounce_replacement_queue": [],
@@ -173,7 +173,8 @@
     "2026-08-14": 3,
     "2026-08-17": 2,
     "2026-08-27": 1,
-    "2026-09-22": 1
+    "2026-09-22": 1,
+    "2026-10-21": 1
   },
   "daily_unsub_count": {
     "2026-08-07": 1,
@@ -281,6 +282,16 @@
       "handed_at": "2026-08-17T15:10:16-07:00",
       "alerted": false,
       "closed": false
+    },
+    {
+      "email": "normabuenrostro51@gmail.com",
+      "cid": "256969731242",
+      "name": "Brenda Ramos",
+      "company": "Everar Home Health LLC",
+      "why": "Requests pricing sheet; signals genuine buying intent.",
+      "handed_at": "2026-10-21T20:37:45-07:00",
+      "alerted": false,
+      "closed": false
     }
   ],
   "daily_potential_count": {
@@ -318,6 +329,7 @@
     "manju@solanocbas.com": "2026-09-22",
     "info@dakmenhomehealth.com": "2026-10-07",
     "jimmy@precisionhc.org": "2026-10-07",
-    "caminonuevoclinic@gmail.com": "2026-10-20"
+    "caminonuevoclinic@gmail.com": "2026-10-20",
+    "normabuenrostro51@gmail.com": "2026-10-21"
   }
 }
