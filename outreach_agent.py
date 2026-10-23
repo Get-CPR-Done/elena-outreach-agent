@@ -1569,6 +1569,8 @@ TASK_DUE_MINUTES = int(os.environ.get("TASK_DUE_MINUTES", "30") or 30)
 HANDOFF_EMAIL = (os.environ.get("HANDOFF_EMAIL", "1") or "1").strip() not in ("0", "false", "no")
 
 SLACK_BOT_TOKEN    = os.environ.get("SLACK_BOT_TOKEN", "")
+# Whoever takes the next step on a GCD SQL gets tagged on the #gcd post (Chris, 10/23/26: Kayla).
+SLACK_LEAD_MENTION = os.environ.get("SLACK_LEAD_MENTION") or "<@U091N5QLNE6>"
 SLACK_LEADS_CHANNEL = os.environ.get("SLACK_LEADS_CHANNEL") or "C0804PH0W0Z"   # #GCD (private)
 STALL_HOURS = int(os.environ.get("STALL_HOURS", "12") or 12)
 
@@ -2341,7 +2343,8 @@ def check_replies(state, dry_run=False):
                                     + f"\n_{reason}_\n{sender_email}"
                                     + (f" · <{hs_link}|HubSpot>" if hs_link else "")
                                     + f"\nOwner: {LEAD_OWNER_EMAIL} · task due in "
-                                    f"{TASK_DUE_MINUTES} min · via {SENDING_NAME}")
+                                    f"{TASK_DUE_MINUTES} min · via {SENDING_NAME}"
+                                    + f"\n{SLACK_LEAD_MENTION} please take the next step.")
                                 # Watch it for follow-through; escalates after STALL_HOURS.
                                 _track_open_lead(state, sender_email, cid,
                                                  (first + " " + last).strip() or company,
